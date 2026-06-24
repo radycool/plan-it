@@ -1,0 +1,3 @@
+- [react-icons LinkedIn icon](react-icons-linkedin.md) — SiLinkedin was removed from react-icons/si v5; use the inline SVG fallback in platform-icon.tsx
+- [Orval Params collision](orval-params-collision.md) — Orval generates <OperationId>Params for both path params and query params, causing TS2308 if both exist on one operation
+- [DB lib rebuild after schema change](db-lib-rebuild.md) — must run typecheck:libs before API server typecheck whenever new tables are added to lib/db

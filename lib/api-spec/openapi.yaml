@@ -3,13 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Plan-It API — content approval platform for agencies
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User management
+  - name: clients
+    description: Client management
+  - name: accounts
+    description: Social account management
+  - name: posts
+    description: Post management
+  - name: comments
+    description: Comment management
+  - name: shareLinks
+    description: Share link management
+  - name: storage
+    description: Object storage
 paths:
   /healthz:
     get:
@@ -24,6 +38,351 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: syncMe
+      tags: [users]
+      summary: Create or sync current user after Clerk login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSync"
+      responses:
+        "200":
+          description: User synced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all clients (team members only)
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{clientId}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a client with social accounts
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Client detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDetail"
+        "404":
+          description: Not found
+
+  /clients/{clientId}/summary:
+    get:
+      operationId: getClientSummary
+      tags: [clients]
+      summary: Get client post stats summary
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Client summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSummary"
+
+  /clients/{clientId}/accounts:
+    post:
+      operationId: createAccount
+      tags: [accounts]
+      summary: Create a social account under a client
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialAccount"
+
+  /accounts/{accountId}/posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List posts for a social account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a new post
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post with comments and media
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /posts/{postId}/status:
+    patch:
+      operationId: updatePostStatus
+      tags: [posts]
+      summary: Update post status (approve, request-changes, etc.)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostStatusUpdate"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}/comments:
+    post:
+      operationId: addComment
+      tags: [comments]
+      summary: Add a comment to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /share-links:
+    post:
+      operationId: createShareLink
+      tags: [shareLinks]
+      summary: Generate a public no-login share link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareLinkInput"
+      responses:
+        "201":
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLink"
+
+  /preview/{token}:
+    get:
+      operationId: getPreview
+      tags: [shareLinks]
+      summary: Get public feed for a share link (no auth required)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public preview feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreviewFeed"
+        "404":
+          description: Invalid or expired token
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [clients]
+      summary: Agency-level dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequest"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getObject
+      tags: [storage]
+      summary: Serve an uploaded object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object file
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +393,353 @@ components:
       required:
         - status
 
+    UserProfile:
+      type: object
+      required: [id, clerkId, email, role]
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [TEAM_ADMIN, TEAM_EDITOR, CLIENT_APPROVER]
+        orgId:
+          type: ["string", "null"]
+        clientId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UserSync:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [TEAM_ADMIN, TEAM_EDITOR, CLIENT_APPROVER]
+
+    Client:
+      type: object
+      required: [id, name, orgId, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        orgId:
+          type: string
+        createdAt:
+          type: string
+        accountCount:
+          type: integer
+        pendingCount:
+          type: integer
+
+    ClientInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        logoUrl:
+          type: ["string", "null"]
+
+    ClientDetail:
+      type: object
+      required: [id, name, orgId, createdAt, socialAccounts]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        orgId:
+          type: string
+        createdAt:
+          type: string
+        socialAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialAccount"
+
+    ClientSummary:
+      type: object
+      required: [clientId, totalPosts, byStatus, byPlatform]
+      properties:
+        clientId:
+          type: string
+        totalPosts:
+          type: integer
+        byStatus:
+          type: object
+          properties:
+            DRAFT: { type: integer }
+            PENDING_APPROVAL: { type: integer }
+            APPROVED: { type: integer }
+            CHANGES_REQUESTED: { type: integer }
+            SCHEDULED: { type: integer }
+            PUBLISHED: { type: integer }
+        byPlatform:
+          type: object
+          properties:
+            INSTAGRAM: { type: integer }
+            LINKEDIN: { type: integer }
+            TIKTOK: { type: integer }
+            FACEBOOK: { type: integer }
+
+    SocialAccount:
+      type: object
+      required: [id, clientId, platform, handle, createdAt]
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        platform:
+          type: string
+          enum: [INSTAGRAM, LINKEDIN, TIKTOK, FACEBOOK]
+        handle:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        postCount:
+          type: integer
+        pendingCount:
+          type: integer
+
+    AccountInput:
+      type: object
+      required: [platform, handle]
+      properties:
+        platform:
+          type: string
+          enum: [INSTAGRAM, LINKEDIN, TIKTOK, FACEBOOK]
+        handle:
+          type: string
+          minLength: 1
+        avatarUrl:
+          type: ["string", "null"]
+
+    PostMedia:
+      type: object
+      required: [id, postId, mediaUrl, mediaType, orderIndex]
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        mediaUrl:
+          type: string
+        mediaType:
+          type: string
+          enum: [IMAGE, VIDEO]
+        orderIndex:
+          type: integer
+
+    Comment:
+      type: object
+      required: [id, postId, userId, body, createdAt]
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        userId:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+        userName:
+          type: ["string", "null"]
+        userEmail:
+          type: string
+
+    Post:
+      type: object
+      required: [id, socialAccountId, type, status, createdById, createdAt, updatedAt, media, comments]
+      properties:
+        id:
+          type: string
+        socialAccountId:
+          type: string
+        type:
+          type: string
+          enum: [SINGLE, CAROUSEL, REEL, STORY]
+        caption:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, CHANGES_REQUESTED, SCHEDULED, PUBLISHED]
+        scheduledAt:
+          type: ["string", "null"]
+        createdById:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostMedia"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+
+    PostInput:
+      type: object
+      required: [type, media]
+      properties:
+        type:
+          type: string
+          enum: [SINGLE, CAROUSEL, REEL, STORY]
+        caption:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+        media:
+          type: array
+          items:
+            type: object
+            required: [url, type]
+            properties:
+              url:
+                type: string
+              type:
+                type: string
+                enum: [IMAGE, VIDEO]
+
+    PostStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, CHANGES_REQUESTED, SCHEDULED, PUBLISHED]
+
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+
+    ShareLink:
+      type: object
+      required: [id, token, clientId, createdAt, url]
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        clientId:
+          type: string
+        socialAccountId:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        url:
+          type: string
+
+    ShareLinkInput:
+      type: object
+      required: [clientId]
+      properties:
+        clientId:
+          type: string
+        socialAccountId:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+
+    PreviewFeed:
+      type: object
+      required: [client, accounts]
+      properties:
+        client:
+          $ref: "#/components/schemas/Client"
+        accounts:
+          type: array
+          items:
+            type: object
+            required: [account, posts]
+            properties:
+              account:
+                $ref: "#/components/schemas/SocialAccount"
+              posts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+    Dashboard:
+      type: object
+      required: [totalClients, totalPosts, pendingApproval, recentActivity]
+      properties:
+        totalClients:
+          type: integer
+        totalPosts:
+          type: integer
+        pendingApproval:
+          type: integer
+        approved:
+          type: integer
+        changesRequested:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [postId, clientName, accountHandle, platform, status, updatedAt]
+            properties:
+              postId:
+                type: string
+              clientName:
+                type: string
+              accountHandle:
+                type: string
+              platform:
+                type: string
+              status:
+                type: string
+              updatedAt:
+                type: string
+
+    UploadRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+
+    UploadResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string

@@ -1,0 +1,6 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" fill="transparent"/>
+  <rect x="10" y="15" width="30" height="30" rx="6" fill="#CCFF00"/>
+  <path d="M20 25L25 30L30 20" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="50" y="40" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="28" fill="#FAFAFA">Plan-It</text>
+</svg>
